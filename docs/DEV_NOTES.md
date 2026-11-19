@@ -2,20 +2,20 @@ Ghi chép kiến trúc hệ thông và triển khai thực tế:
 
 ----
  
- ** Cấu trúc thư mục chuẩn: 
+ **Cấu trúc thư mục chuẩn:** 
     - 'include/' ('.hpp'): Khai báo giao diện class/hàm (Header files). 
     - 'src/' ('.cpp'): Cài đặt logic chi tiết (Source files). 
     - 'build/': Chứa toàn bộ file trung gian và file thực thi sau khi biên dịch (tách biệt hoàn toàn khỏi mã nguồn). 
     - 'docs/': Lưu trữ tài liệu thiết kế và sổ tay ôn tập. 
     - 'logs/' & 'tests/': Lưu file nhật ký chạy hệ thống và mã nguồn kiểm thử. 
- ** Công cụ quản lý build ('CMakeList.txt'): 
+ **Công cụ quản lý build ('CMakeList.txt'):**
     - Ép chuẩn biên dịch 'C++17' ('CMAKE_CXX_STANDARD 17').
     - Bật cờ kiểm tra lỗi nghiêm ngặt '-Wall -Wextra -Wpedantic' để trình biên dịch soi lỗi. 
     - Liên kết thư viện 'Threads:Threads' ('pthread' trên Linux) phục vụ lập trình đa luồng. 
- ** Quản lý phiên bản ('.gitignore'): 
+ **Quản lý phiên bản ('.gitignore'):** 
     - Loại trừ thư mục 'build/' và 'log/*.log' để giữ repository sạch sẽ, chỉ lưu trữ mã nguồn thuần tuý. 
 
-** Quy trình lưu version Git cho project: 
+**Quy trình lưu version Git cho project:** 
    - 'git status': Kiểm tra các file vừa thêm/sửa trước khi đóng gói. 
    - 'git add': Đưa toàn bộ thay đổi vào vùng chờ (Staging). 
    - 'git commit -m "<type>: <mô tả ngắn>": Lưu mốc lịch sử tại máy Local (ví dụ: 'chore:' cho cấu hình, 'feat:' cho tính năng mới, 'fix:' cho sửa bug). 
@@ -43,6 +43,31 @@ Ghi chép kiến trúc hệ thông và triển khai thực tế:
    **Kết quả** 
    3/ Chạy './sip_engine' thành công, xuấT ra định dạng log chuẩn.
 
-   
+
+## 1.4 Nâng cấp Header 'Logger' lên chuẩn SingleTon và Thread-safe ('include/Logger.hpp')
+   - **Meyer' SingleTon Pattern:**
+      - Chuyển hàm tạo 'Logger() = default;' vào 'private' để ngăn bên ngoài tự ý tạo nhiều đối tượng 'Logger'.
+      - Xoá Copy Constructor và Copy Assignment ('=delete') để chặn việc nhân bản đối tượng. 
+      - Cung cấp cổng truy cập duy nhất 'static Logger &getInstance()' trả về tham chiếu tới 1 thực thể cố định. 
+   - **RAII (Resource Acquisition Is Initiallization):** 
+      - Sử dụng hàm huỷ '~Loger()' để tự động đóng 'std::ofstream logFile_' khi chương trình kết thúc, đảm bảo không rò rỉ bộ nhớ và không mất dữ liệu đệm. 
+   - **Đồng bộ đa luồng ('std::mutex')**
+      - Khai báo biến khoá 'mutex_' để điều phối thứ tự ghi dữ liệu giữa các luồng, ngăn chặn xung đột bộ nhwos. 
+   - **Quy ước đặt tên (Naming Convention)** Thêm hậu tố '_' cho các biến thành viên 'private' của class để dễ phân biệt với các biến cục bộ. 
+
+## 1.5 Hoàn thiện logic SingleTon, File I/O và Mutex ('src/Logger.cpp')
+   - **Magic Statics (C++11+):** Khai báo 'static Logger instance;' bên trong 'getInstance()' đảm bảo biến chỉ được khai báo 1 lần duy nhất và an toàn đa luồng mà không cần viết code khoá phức tạp.
+   - **RAII với 'std::lock_guard<std::mutex>':** Tự động khoá 'mutex_' khi khởi tạo biến 'lock' và tự động mở khoá khi biến 'lock ra khỏi phạm vi hàm ('}'), loại bỏ hoàn toàn nguy cơ quên mở khoá gây treo hệ thống. 
+   - **Chế độ mở file ('std::ios::out / std::ios::app):** Mở file để ghi ('out') và nối tiếp vào cuối file ('app' - append) nằm giữ lại toàn bộ chuỗi lịch sử log cũ mỗi khi khởi động lại server. 
+   - **Bảo vệ khởi tạo kép (Idempotency):** Kiểm tra 'if(logFile_.is_open()) return;' trong 'init()' để tránh lỗi 'failbit' của 'std::ofstream' nếu hàm 'init()' bị gọi nhiều lần. 
+
+## 1.6 Kiểm thử đa luồng ('std::thread') và xử lý đường dẫn File System
+   **Lập trình đa luồng cơ bản ('std::thread'):**
+   - Dùng 'thread.emplace_back(workerTask, i)' để khởi tạp và chạy song song nhiều luồng trực tiếp trong 'std::vector' mà không cần copy đối tượng luồng. 
+   - Bắt buộc gọi 't.join()' cho mọi luồng trước khi kết thúc hàm 'main()' để luồng chính đợi các luồn con hoàn thành công việc. Lưu ý, nếu quên 'join()' thì chương trình sẽ bị lỗi 'std::terminate' và crash.
+   **Quản lý đường dẫn & 'std::filesystem' (C++17):**
+   - 'std::ofstream' chỉ tạo file mới khi thư mục cha đã tồn tại: nếu sai tên thư mục hoặc sai thư mục làm việc hiện hành thì hàm 'open()' sẽ thất bại. 
+   - Có thể dùng 'std::filesystem::create_directories()' để tự động tạo cây thư mục cha trước khi mở file. 
+   **Biên dịch với 'make':** Khi chỉ sửa nội dung bên trong các file '.cpp/.hpp' có sẵn (không thêm/xoá file mới), chỉ cần chạy 'make' trong thư mục 'build/' mà không cần chạy lại 'cmake ..'. 
 ---
 EOF
