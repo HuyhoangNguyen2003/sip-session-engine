@@ -8,18 +8,18 @@ Ghi chép kiến trúc hệ thông và triển khai thực tế:
     - 'build/': Chứa toàn bộ file trung gian và file thực thi sau khi biên dịch (tách biệt hoàn toàn khỏi mã nguồn).\ 
     - 'docs/': Lưu trữ tài liệu thiết kế và sổ tay ôn tập.\
     - 'logs/' & 'tests/': Lưu file nhật ký chạy hệ thống và mã nguồn kiểm thử.\
- **Công cụ quản lý build ('CMakeList.txt'):**
-    - Ép chuẩn biên dịch 'C++17' ('CMAKE_CXX_STANDARD 17').
-    - Bật cờ kiểm tra lỗi nghiêm ngặt '-Wall -Wextra -Wpedantic' để trình biên dịch soi lỗi. 
-    - Liên kết thư viện 'Threads:Threads' ('pthread' trên Linux) phục vụ lập trình đa luồng. 
- **Quản lý phiên bản ('.gitignore'):** 
-    - Loại trừ thư mục 'build/' và 'log/*.log' để giữ repository sạch sẽ, chỉ lưu trữ mã nguồn thuần tuý. 
+ **Công cụ quản lý build ('CMakeList.txt'):**\
+    - Ép chuẩn biên dịch 'C++17' ('CMAKE_CXX_STANDARD 17').\
+    - Bật cờ kiểm tra lỗi nghiêm ngặt '-Wall -Wextra -Wpedantic' để trình biên dịch soi lỗi.\ 
+    - Liên kết thư viện 'Threads:Threads' ('pthread' trên Linux) phục vụ lập trình đa luồng.\
+ **Quản lý phiên bản ('.gitignore'):** \
+    - Loại trừ thư mục 'build/' và 'log/*.log' để giữ repository sạch sẽ, chỉ lưu trữ mã nguồn thuần tuý. \
 
-**Quy trình lưu version Git cho project:** 
-   - 'git status': Kiểm tra các file vừa thêm/sửa trước khi đóng gói. 
-   - 'git add': Đưa toàn bộ thay đổi vào vùng chờ (Staging). 
-   - 'git commit -m "<type>: <mô tả ngắn>": Lưu mốc lịch sử tại máy Local (ví dụ: 'chore:' cho cấu hình, 'feat:' cho tính năng mới, 'fix:' cho sửa bug). 
-   - 'git push': Đẩy các mốc commit mới nhất từ Ubuntu lên Github.  
+**Quy trình lưu version Git cho project:** \
+   - 'git status': Kiểm tra các file vừa thêm/sửa trước khi đóng gói.\
+   - 'git add': Đưa toàn bộ thay đổi vào vùng chờ (Staging).\
+   - 'git commit -m "<type>: <mô tả ngắn>": Lưu mốc lịch sử tại máy Local (ví dụ: 'chore:' cho cấu hình, 'feat:' cho tính năng mới, 'fix:' cho sửa bug).\
+   - 'git push': Đẩy các mốc commit mới nhất từ Ubuntu lên Github.\
 
 ## 1.1 Thiết kế Header cơ bản ('include/Logger.hpp')
    -'#pragma once': Ngăn trình biên dịch đọc trùng lặp một file header nhiều lần.
