@@ -76,5 +76,27 @@
   - Có thể dùng `std::filesystem::create_directories()` để tự động tạo cây thư mục cha trước khi mở file.
 - **Biên dịch với `make`:** Khi chỉ sửa nội dung bên trong các file `.cpp`/`.hpp` có sẵn (không thêm/xóa file mới), chỉ cần chạy `make` trong thư mục `build/` mà không cần chạy lại `cmake ..`.
 
+## Giai đoạn 2: Phân tích cấu trúc bản tin SIP (`SipMessage` & `SipParser`)
+
+### 2.1 Thiết kế cấu trúc dữ liệu bản tin SIP (`include/SipMessage.hpp`)
+- **`struct` vs `class`:** Dùng `struct` (mặc định các thành viên là `public`) cho các đối tượng thuần tuý lưu trữ và vận chuyển dữ liệu (DTO - Data Transfer Object) như `SipMessage`. 
+- **`std::unordered_map<std::string, std::string>`:** Bảng băm (Hash Table) lưu trữ các cặp `Header:Value`, cho tốc độ tra cứu trung bình $O(1)$. 
+-**Truy vấn an toàn với `.find()` thay vì toán tử `[]`:**
+  - Toán tử `headers[key]` sẽ tự động chèn thêm phần tử mới nếu `key` chưa tồn tại (gây thay đổi dữ liệu và tốn bộ nhớ). 
+  - Dùng `auto it = headers.find(key);` kết hợp kiểm tra `it !=headers.end()` giúp đọc dữ liệu an toàn (`it->second`) mà không làm thay đổi cấu trúc bảng băm. 
+-**`const` Member Function (`getHeader(...) const`):** Cam kết chỉ đọc dữ liệu nội bộ, cho phép gọi hàm này trên các đối tượng `const SipMessage&`.  
+
+### 2.2 Thiết kế Header Bộ giải mã SIP (`include/SipParser.hpp`)
+- **`std::string_view` (C++17):** Chỉ là một cặp `(con trỏ + độ dài)` trỏ thẳng vào vùng nhớ chuỗi gốc mà không sap chép dữ liệu (`zero-copy`), giúp cắt chuỗi và phân tích gói tin mạng cực nhanh. 
+-**`std::optional<T>`(C++17):** Biểu diễn giá trị có thể tồn tại hoặc rỗng (`std::nulopt`). Rất lý tưởng cho các hàm phân tích gói tin mạng (trả về `SipMessage` nếu hợp lệ, hoặc `std::nullopt` nếu gói tin rác/lỗi cú pháp thay vì phải dùng mã lỗi rườm rà hay ném ngoại lệ tốn kém). 
+-**Hàm thành viên tĩnh (`static`):** Vì `SipParser` là một bộ xử lý không lưu trạng thái nội bộ (*stateless*), khai báo các hàm là `static` cho phép gọi trực tiếp `SipParser::parse(raw)` mà không cần khởi tạo đối tượng thừa thãi. 
+
+### 2.3 Cài đặt logic giải mã bản tin SIP (`src/SipParser.cpp`)
+- **Phân tách Header và Body:** Dựa trên chuẩn RFC3261, Phần Header và Body ngăn cách bởi một dòng trống (`\r\n\r\n` trên mạng thực tế, hoặc `\n\n` khi test trên Linux). 
+- **`std::from_chars` (C++17):** Chuyển đổi chuỗi số (như `statusCode` `200`, `404`) sang `int` trực tiếp trên vùng nhớ `std::string_view` mà không cấp phát bộ nhớ động và không nén ngoại lệ (`exception`) như `std::stoi`. 
+
+### 2.4 Kiểm thử bộ giải mã SIP (`src/main.cpp`)
+- **Kiểm tra `std::optional` an toàn:** Dùng `if (parsed.has_value())` trước khi truy xuất dữ liệu bên trong qua toán tử mũi tên `parsed->...` (nếu truy cập khi rỗng sẽ gây lỗi hành vi không xác định). 
+- **Cập nhật file mới với CMake:** Mỗi khi tạo thêm file `.cpp` mới trong thư mục `src/` (như `src/SipParsed.cpp`), bắt buộc phải chạy lại `cmake .. ` để cập nhật lại danh sách file mới 
 ---
->>>>>>> 312af7b (Update: Update Docs format)
+

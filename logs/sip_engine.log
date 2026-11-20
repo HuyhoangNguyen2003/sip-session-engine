@@ -18,3 +18,11 @@
 [INFO]: Thread 2 - Message 3
 [INFO]: Thread 2 - Message 4
 [INFO]: Thread 2 - Message 5
+[INFO]: SIP INVITE parsed successfully!
+[INFO]: Request URIL: sip:bob@biloxi.com
+[INFO]: Call-ID: a84b4c76e66710@pc33.atlanta.com
+[INFO]: From: Alice <sip:alice@atlanta.com>;tag=1928301774
+[INFO]: Body:
+v=0
+o=alice 2890844526 2890844526 IN IP4 pc33.atlanta.com
+
